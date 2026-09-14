@@ -8,8 +8,7 @@ dimensions rather than fifty raw columns.
 Built on FBref per-90 stats joined to FIFA attributes, ~20,600 player-seasons
 across Europe's top leagues, 2017/18 to 2024/25.
 
-**[Try it →](https://USERNAME.github.io/player-similarity/)**  *(replace USERNAME
-once Pages is enabled)*
+**[Try it →](https://shakhzodbekbakhtiyorov.github.io/player-similarity/)**
 
 The demo runs entirely in your browser — the index ships as 5 MB of typed
 arrays and every query is a mat-vec in JavaScript. No server, so nothing to
