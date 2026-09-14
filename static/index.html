@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player style similarity</title>
+<style>
+:root{
+  --bg:#fbfaf9; --panel:#fff; --ink:#1a1a19; --muted:#6b6b68; --line:#e5e3e0;
+  --accent:#2f6f5e; --accent-soft:#e6efec; --warn:#8a6d3b; --b:#4a7fb5;
+  --radius:10px;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#16171a; --panel:#1d1f23; --ink:#e9e8e6; --muted:#9a9995;
+         --line:#2e3137; --accent:#7fc3ad; --accent-soft:#22322d; --b:#7fa9d6; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 64px}
+h1{font-size:19px;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 22px;font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.panel + .panel{margin-top:16px}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+input,select{font:inherit;color:inherit;background:var(--bg);
+  border:1px solid var(--line);border-radius:7px;padding:8px 10px;width:100%}
+input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.controls{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.controls>div{flex:1 1 120px;min-width:110px}
+.hits{list-style:none;margin:8px 0 0;padding:0;max-height:260px;overflow:auto;
+  border:1px solid var(--line);border-radius:7px}
+.hits:empty{display:none}
+.hits li{padding:8px 11px;cursor:pointer;border-bottom:1px solid var(--line);
+  display:flex;justify-content:space-between;gap:10px}
+.hits li:last-child{border-bottom:0}
+.hits li:hover{background:var(--accent-soft)}
+.tag{font-size:11px;color:var(--muted);white-space:nowrap}
+table{width:100%;border-collapse:collapse;margin-top:4px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--accent-soft)}
+tbody tr.sel{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.simbar{height:5px;border-radius:3px;background:var(--accent);min-width:2px}
+.simcell{width:150px}
+.num{font-variant-numeric:tabular-nums}
+.axis{margin:0 0 18px;padding:14px 0 0;border-top:1px solid var(--line)}
+.axis:first-child{border-top:0;padding-top:0}
+.axis-head{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+.axis-name{font-weight:600;font-size:14px}
+.sentence{margin:3px 0 0;font-size:14px}
+.conf{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap;
+  border:1px solid var(--line);color:var(--muted)}
+.conf.hi{color:var(--accent);border-color:var(--accent)}
+.conf.lo{color:var(--warn);border-color:var(--warn)}
+.scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);
+  margin-top:2px}
+.vals{font-size:12px;color:var(--muted);margin-top:6px}
+.vals b{font-weight:600;color:var(--ink)}
+.track{position:relative;height:26px;margin-top:5px;border-radius:5px;
+  background:linear-gradient(90deg,transparent,var(--line) 49.6%,var(--line) 50.4%,transparent)}
+.track::after{content:"";position:absolute;left:0;right:0;top:13px;height:1px;background:var(--line)}
+.dot{position:absolute;top:7px;width:12px;height:12px;border-radius:50%;
+  transform:translateX(-6px);z-index:2}
+.dot.a{background:var(--accent)}
+.dot.b{background:var(--panel);border:2px solid var(--b)}
+.seg{position:absolute;top:12px;height:3px;background:var(--line);border-radius:2px}
+.legend{display:flex;gap:16px;align-items:center;font-size:12px;color:var(--muted);margin-top:10px}
+.key{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.note{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.55}
+.empty{color:var(--muted);padding:22px 0;text-align:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:680px){.grid2{grid-template-columns:1fr}}
+.flist{list-style:none;margin:6px 0 0;padding:0;font-size:13px}
+.flist li{display:flex;justify-content:space-between;gap:10px;padding:4px 0;
+  border-bottom:1px solid var(--line)}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);
+  margin:0;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Player style similarity</h1>
+  <p class="sub">Neighbours are ranked in the weighted per-90 space. The explanation
+    below uses the position's own style axes, learned separately for each role.</p>
+
+  <div class="panel">
+    <label for="q">Search a player</label>
+    <input id="q" placeholder="Rodri, Kroos, Saliba&hellip;" autocomplete="off">
+    <ul class="hits" id="hits"></ul>
+    <div class="controls">
+      <div><label for="scope">Compare within</label>
+        <select id="scope"><option value="role">Same fine role</option>
+          <option value="bucket">Same broad position</option></select></div>
+      <div><label for="k">Results</label>
+        <select id="k"><option>10</option><option>15</option><option>25</option></select></div>
+      <div><label for="min90s">Min 90s played</label>
+        <select id="min90s"><option>8</option><option>15</option><option>20</option><option>25</option></select></div>
+      <div><label for="season">Season</label>
+        <select id="season"><option value="">Any</option></select></div>
+    </div>
+  </div>
+
+  <div class="panel" id="resultsPanel" hidden>
+    <h3 id="resultsTitle">Most similar</h3>
+    <table><thead><tr><th>#</th><th>Player</th><th>Team</th><th>Season</th>
+      <th class="simcell">Similarity</th></tr></thead>
+      <tbody id="rows"></tbody></table>
+    <p class="note" id="candNote"></p>
+  </div>
+
+  <div class="panel" id="explainPanel" hidden>
+    <h3 id="explainTitle">Why</h3>
+    <div id="axes"></div>
+    <div class="legend" id="legend"></div>
+    <p class="note" id="axisNote"></p>
+    <div class="grid2" style="margin-top:18px">
+      <div><h3>Both stand out on</h3><ul class="flist" id="alike"></ul></div>
+      <div><h3>Furthest apart on</h3><ul class="flist" id="diff"></ul></div>
+    </div>
+    <p class="note">Numbers are standard deviations from the average player in
+      this position, for each of the two. The left column ranks on agreeing at
+      an <em>unusual</em> value &mdash; two players both sitting at the positional
+      average is a tie, not a similarity. Height, weight, pace, physicality,
+      dribbling and skill-moves ratings are left out of both lists: they
+      describe a body, not a style &mdash; though they do still count, at low
+      weight, toward the similarity score at the top.</p>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let current = null, META = null;
+
+const api = (p, q) => fetch(p + '?' + new URLSearchParams(q)).then(r => r.json());
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+api('/api/meta', {}).then(m => {
+  META = m;
+  $('#season').insertAdjacentHTML('beforeend',
+    m.seasons.map(s => `<option value="${s}">${s}</option>`).join(''));
+});
+
+let timer;
+$('#q').addEventListener('input', e => {
+  clearTimeout(timer);
+  const q = e.target.value.trim();
+  if (q.length < 2) { $('#hits').innerHTML = ''; return; }
+  timer = setTimeout(() => api('/api/search', {q, limit: 12}).then(d => {
+    $('#hits').innerHTML = d.results.map(r => `
+      <li data-key="${esc(r.key)}"><span>${esc(r.player)}</span>
+        <span class="tag">${esc(r.team)} &middot; ${esc(r.season)} &middot;
+          ${esc(r.role)} &middot; ${r.nineties} 90s</span></li>`).join('');
+  }), 160);
+});
+
+$('#hits').addEventListener('click', e => {
+  const li = e.target.closest('li'); if (!li) return;
+  $('#hits').innerHTML = ''; $('#q').value = li.dataset.key;
+  select(li.dataset.key);
+});
+
+['#scope', '#k', '#min90s', '#season'].forEach(s =>
+  $(s).addEventListener('change', () => current && select(current)));
+
+function select(key) {
+  current = key;
+  $('#explainPanel').hidden = true;
+  api('/api/similar', {key, k: $('#k').value, scope: $('#scope').value,
+                       min90s: $('#min90s').value, season: $('#season').value})
+    .then(d => {
+      const q = d.query;
+      $('#resultsTitle').textContent =
+        `Most similar to ${q.player} — ${q.team}, ${q.season} (${q.role})`;
+      $('#rows').innerHTML = d.results.map(r => `
+        <tr data-key="${esc(r.key)}">
+          <td class="num">${r.rank}</td>
+          <td>${esc(r.player)}</td><td>${esc(r.team)}</td>
+          <td class="num">${esc(r.season)}</td>
+          <td class="simcell">
+            <div class="simbar" style="width:${Math.max(0, r.similarity) * 100}%"></div>
+            <span class="tag num">${r.similarity.toFixed(3)}</span></td>
+        </tr>`).join('') || `<tr><td colspan="5" class="empty">No candidates</td></tr>`;
+      $('#candNote').textContent =
+        `${d.n_candidates.toLocaleString()} candidate player-seasons. Click a row to see why.`;
+      $('#resultsPanel').hidden = false;
+    });
+}
+
+$('#rows').addEventListener('click', e => {
+  const tr = e.target.closest('tr'); if (!tr || !tr.dataset.key) return;
+  [...$('#rows').children].forEach(r => r.classList.toggle('sel', r === tr));
+  api('/api/explain', {a: current, b: tr.dataset.key}).then(render);
+});
+
+// axis scores are z-units within the role; clamp the track at +/-3 SD
+const pos = v => (Math.max(-3, Math.min(3, v)) + 3) / 6 * 100;
+
+function render(d) {
+  $('#explainTitle').textContent = `${d.a.player} vs ${d.b.player}`;
+  if (d.axes_available) {
+    $('#axes').innerHTML = d.role_axes.map((a, n) => {
+      const pa = pos(a.a), pb = pos(a.b), lo = Math.min(pa, pb);
+      const cls = a.confidence === 'holds up' ? 'hi'
+                : a.confidence === 'season-specific' ? 'lo' : '';
+      return `<div class="axis">
+        <div class="axis-head">
+          <span class="axis-name">${esc(a.title)}</span>
+          <span class="conf ${cls}" title="${esc(a.confidence_note)}">${esc(a.confidence)}</span>
+        </div>
+        <p class="sentence">${esc(a.sentence)}</p>
+        <div class="track">
+          <div class="seg" style="left:${lo}%;width:${Math.abs(pa - pb)}%"></div>
+          <div class="dot a" style="left:${pa}%" title="${esc(d.a.player)}"></div>
+          <div class="dot b" style="left:${pb}%" title="${esc(d.b.player)}"></div>
+        </div>
+        ${n === 0 ? `<div class="scale"><span>less</span>
+            <span>average ${esc(d.a.role)}</span><span>more</span></div>` : ''}
+        <div class="vals">
+          <b>${esc(d.a.player)}</b> ${a.a_level} (${a.a.toFixed(2)}) &nbsp;·&nbsp;
+          <b>${esc(d.b.player)}</b> ${a.b_level} (${a.b.toFixed(2)})<br>
+          Higher means more: ${esc((a.high || []).join(', ') || '—')}${
+            a.low && a.low.length ? `. Lower means more: ${esc(a.low.join(', '))}.` : '.'}
+        </div>
+      </div>`;
+    }).join('');
+    $('#legend').innerHTML =
+      `<span><i class="key" style="background:var(--accent)"></i>${esc(d.a.player)}</span>
+       <span><i class="key" style="background:transparent;border:2px solid var(--b)"></i>${esc(d.b.player)}</span>
+       <span>Sorted most-alike first. Scale is standard deviations from the average ${esc(d.a.role)}.</span>`;
+    $('#axisNote').innerHTML =
+      `"Holds up" vs "season-specific" is how much of a player's position on that
+       row survives a move to another club. Treat season-specific rows as a
+       description of that season, not a prediction about the player.`;
+  } else {
+    $('#axes').innerHTML = `<p class="empty">These two play different fine roles
+      (${esc(d.a.role)} vs ${esc(d.b.role)}), so there is no shared axis model.
+      The feature breakdown below still applies.</p>`;
+    $('#legend').innerHTML = ''; $('#axisNote').textContent = '';
+  }
+  const li = f => `<li><span>${esc(f.feature)} <span class="tag">${esc(f.group)}</span></span>
+    <span class="tag num">${f.z_a.toFixed(2)} / ${f.z_b.toFixed(2)}</span></li>`;
+  $('#alike').innerHTML = d.most_alike.map(li).join('');
+  $('#diff').innerHTML = d.most_different.map(li).join('');
+  $('#explainPanel').hidden = false;
+  $('#explainPanel').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+</script>
+</body>
+</html>

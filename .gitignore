@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.venv/
+venv/
+simenv/
+
+# Source data is not redistributed (see README); /data/processed is derived.
+# Anchored to the root so docs/data/ — the exported demo — is still tracked.
+/data/
+fifa_fbref_merged.csv
