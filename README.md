@@ -2,15 +2,17 @@
 
 Find footballers who **play like** a given player — not ones who are equally
 good. Given "Rodri, 2022/23", it returns Højbjerg, Brozović, Fernandinho,
-Locatelli, Busquets, and then explains what makes them alike in six named
+Locatelli, Henderson, and then explains what makes them alike in six named
 dimensions rather than fifty raw columns.
 
-Built on FBref per-90 stats joined to FIFA attributes, ~20,600 player-seasons
-across Europe's top leagues, 2017/18 to 2024/25.
+Built on FBref per-90 stats joined to FIFA attributes: ~20,600 player-seasons
+(after a minutes filter) from ten leagues — the European big five plus the
+Eredivisie, Primeira Liga, Belgian Pro League, Süper Lig and MLS — 2017/18 to
+2024/25. Data: [Football Player Data Set on Kaggle](https://www.kaggle.com/datasets/uday9081/football-plyer-data-set).
 
 **[Try it →](https://shakhzodbekbakhtiyorov.github.io/player-similarity/)**
 
-The demo runs entirely in your browser — the index ships as 5 MB of typed
+The demo runs entirely in your browser — the index ships as ~6 MB of typed
 arrays and every query is a mat-vec in JavaScript. No server, so nothing to
 cold-start.
 
@@ -18,19 +20,42 @@ cold-start.
 
 ## Run it
 
+Python 3.10+.
+
 ```bash
 pip install -r requirements.txt
 python build.py      # builds data/processed/app_index.pkl, ~1 min
 python app.py        # http://127.0.0.1:5001
 ```
 
-**Data.** `fifa_fbref_merged.csv` is not in the repo. It is a merge of an FBref
-top-5-league export with the FIFA player-attribute dataset, keyed on
-(player, season). Put it in the project root. Any table with the same columns
-works; `config.py` lists exactly which ones are used.
-
 `build.py` is the only slow step. Re-run it when the data or `config.py`
 changes; `app.py` only reads the artifact it produces.
+
+### Data
+
+The source table is not committed. Download it from Kaggle:
+**[Football Player Data Set](https://www.kaggle.com/datasets/uday9081/football-plyer-data-set)**
+by uday9081 (Apache 2.0) — a single file, `fifa_fbref_merged.csv` (~30 MB).
+
+```bash
+# via the Kaggle CLI (needs an API token in ~/.kaggle/kaggle.json),
+# or download the zip from the page and unzip it here
+kaggle datasets download -d uday9081/football-plyer-data-set --unzip
+```
+
+Put `fifa_fbref_merged.csv` in the project root (`config.RAW_CSV`).
+
+What is in it: 28,436 rows × 135 columns, one row per player-season-club.
+FBref per-90 tables (standard, shooting, passing, possession, defensive actions,
+goal/shot creation, keeping) joined to FIFA 18–25 player attributes (ratings,
+position, height/weight, value, wage) on player and season. The merge was done
+by the dataset author, not in this repo. Any table with the same columns works;
+`config.py` lists exactly which ones are used.
+
+Underlying sources: match statistics from [FBref](https://fbref.com) (Opta data),
+player attributes from EA Sports FIFA. This project is not affiliated with
+either. The demo in `docs/` publishes derived per-player scores, not the raw
+table.
 
 ### Publishing the demo
 
@@ -211,3 +236,11 @@ static/       the page, and the browser build of the same logic
 docs/         generated: what GitHub Pages serves
 experiments/  the negative results, reproducible
 ```
+
+---
+
+## License
+
+Code is released under the [MIT License](LICENSE). The dataset is not part of
+this repository and keeps its own terms (Apache 2.0 on Kaggle; see
+[Data](#data) for the underlying sources).
